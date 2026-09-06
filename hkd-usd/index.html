@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>HKD ⇄ USD</title>
+<style>
+  :root{--bg:#f5f6f8;--line:#e5e7eb;--text:#111827;--muted:#6b7280;--accent:#2563eb;--soft:#eff4ff}
+  *{box-sizing:border-box}
+  body{margin:0;padding:48px 16px;background:var(--bg);color:var(--text);
+       font:15px/1.6 -apple-system,BlinkMacSystemFont,"PingFang SC","Segoe UI",sans-serif}
+  .card{max-width:360px;margin:0 auto;background:#fff;border:1px solid var(--line);
+        border-radius:16px;padding:22px}
+  h1{font-size:24px;color:#1B2A41;margin:0 0 18px}
+  .box{border:1px solid var(--line);border-radius:12px;padding:10px 14px;background:#fff}
+  .box:focus-within{border-color:var(--accent);box-shadow:0 0 0 3px var(--soft)}
+  .box span{font-size:11px;color:var(--muted)}
+  .box input{width:100%;border:0;outline:0;padding:2px 0;font-size:22px;font-weight:600;
+             font-variant-numeric:tabular-nums;background:transparent;color:var(--text)}
+  .box:last-of-type input{color:var(--accent)}
+  #swap{display:block;margin:8px auto;border:0;background:transparent;color:var(--muted);
+        cursor:pointer;font-size:13px;padding:2px 8px;border-radius:999px}
+  #swap:hover{color:var(--accent)}
+  .rate{margin-top:18px;padding-top:14px;border-top:1px dashed var(--line);
+        font-size:13px;color:var(--muted);display:flex;align-items:center;gap:6px}
+  .rate input{width:60px;border:1px solid var(--line);border-radius:8px;padding:3px 6px;
+              font:inherit;text-align:center;color:var(--text);font-variant-numeric:tabular-nums}
+  .rate input:focus{outline:0;border-color:var(--accent)}
+  [aria-invalid]{color:#dc2626;border-color:#dc2626}
+</style>
+</head>
+<body>
+<div class="card">
+  <h1>HKD ⇄ USD</h1>
+
+  <div class="box"><span id="fromTag">HKD</span><input id="from" value="1000" inputmode="decimal"></div>
+  <button id="swap">⇅</button>
+  <div class="box"><span id="toTag">USD</span><input id="to" inputmode="decimal"></div>
+
+  <div class="rate">1 USD = <input id="rate" value="7.80" inputmode="decimal"> HKD</div>
+</div>
+
+<script>
+const $ = anId => document.getElementById(anId);
+const [elFrom, elTo, elRate] = [$('from'), $('to'), $('rate')];
+let isHKDToUSD = true;
+
+const parse = aString => {
+  const aText = aString.replace(/[,\s]/g, '');
+  if (!/^(\d+\.?\d*|\.\d+)(e[+-]?\d+)?$/i.test(aText)) return null;  // 拒绝符号与前缀匹配：0x10 / 7.8abc / 1e / -100
+  const aValue = Number(aText);
+  return Number.isFinite(aValue) ? aValue : null;                          // 1e999 → 非有限数
+};
+const show = (aNumber, aDigits = 2) => {
+  if (aNumber === null) return '';
+  const aText = aNumber.toLocaleString('en-US', { maximumFractionDigits: aDigits });
+  return aNumber !== 0 && Number(aText.replace(/,/g, '')) === 0          // 被位数抹成 0
+    ? aNumber.toLocaleString('en-US', { maximumSignificantDigits: 4 })   // 退回有效数字表示
+    : aText;
+};
+const rate = () => { const aRate = parse(elRate.value); return aRate > 0 ? aRate : 0; };
+const flag = (anInput, aBad) =>   // 非法输入显式标红，取代"静默清空、零反馈"
+  aBad ? anInput.setAttribute('aria-invalid', '') : anInput.removeAttribute('aria-invalid');
+let exactTo = null;    // 未四舍五入的结果，供反向换算使用
+let exactFrom = parse(elFrom.value);   // from 框的权威数值，全精度，不取自被截断的显示串
+
+const render = (aKeepTo = false) => {
+  const aRate = rate();
+  exactTo = aRate && exactFrom !== null
+    ? (isHKDToUSD ? exactFrom / aRate : exactFrom * aRate)
+    : null;
+  if (!aKeepTo) elTo.value = show(exactTo);   // 用户正在编辑 to 框时不回写，避免逐键覆盖
+  flag(elRate, elRate.value.trim() !== '' && !(aRate > 0));
+  flag(elFrom, elFrom.value.trim() !== '' && exactFrom === null);
+};
+
+$('swap').addEventListener('click', () => {
+  exactFrom = exactTo === null ? exactFrom : exactTo;   // 无法换算时保留原金额，不降级为空
+  isHKDToUSD = !isHKDToUSD;
+  $('fromTag').textContent = isHKDToUSD ? 'HKD' : 'USD';
+  $('toTag').textContent = isHKDToUSD ? 'USD' : 'HKD';
+  elFrom.value = show(exactFrom, 6);
+  render();
+});
+elFrom.addEventListener('input', () => { exactFrom = parse(elFrom.value); render(); });
+elRate.addEventListener('input', () => render());
+elTo.addEventListener('input', () => {
+  const aValue = parse(elTo.value);
+  if (rate() && aValue !== null) {
+    exactFrom = isHKDToUSD ? aValue * rate() : aValue / rate();
+    elFrom.value = show(exactFrom, 6);   // 派生值统一 6 位，与 ⇅ 保持一致
+  }
+  render(true);
+});
+[elFrom, elTo, elRate].forEach(anInput => anInput.addEventListener('focus', () => anInput.select()));
+
+render();
+</script>
+</body>
+</html>
