@@ -1,6 +1,6 @@
 ---
 name: my0skill
-description: Use this skill when reviewing AILT9019 proposal drafts against the 6-section template, and when turning plain sentences into emoji-spiced, casually funny copy without changing meaning. Two jobs: (1) check the proposal hits all 6 sections + 5 self-check items, (2) sprinkle emojis and swap a few flat words for fun, conversational ones.
+description: "Use this skill when reviewing AILT9019 proposal drafts against the 6-section template, and when turning plain sentences into emoji-spiced, casually funny copy without changing meaning. Two jobs: (1) check the proposal hits all 6 sections + 5 self-check items, (2) sprinkle emojis and swap a few flat words for fun, conversational ones."
 ---
 
 # my0skill · Proposal Checker + Emoji Sprinkler
